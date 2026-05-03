@@ -635,7 +635,13 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-    external fun uniffi_kith_core_checksum_func_greet(
+    external fun uniffi_kith_core_checksum_func_init(
+    ): Short
+    external fun uniffi_kith_core_checksum_func_our_id(
+    ): Short
+    external fun uniffi_kith_core_checksum_func_pop_clipboard(
+    ): Short
+    external fun uniffi_kith_core_checksum_func_push_clipboard(
     ): Short
     external fun ffi_kith_core_uniffi_contract_version(
     ): Int
@@ -650,8 +656,14 @@ internal object UniffiLib {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "kith"))
         
     }
-    external fun uniffi_kith_core_fn_func_greet(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_kith_core_fn_func_init(`peerIdHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_kith_core_fn_func_our_id(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_kith_core_fn_func_pop_clipboard(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_kith_core_fn_func_push_clipboard(`text`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
     external fun ffi_kith_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_kith_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -771,7 +783,16 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_kith_core_checksum_func_greet() != 16708.toShort()) {
+    if (lib.uniffi_kith_core_checksum_func_init() != 9267.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_kith_core_checksum_func_our_id() != 22102.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_kith_core_checksum_func_pop_clipboard() != 5383.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_kith_core_checksum_func_push_clipboard() != 25382.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -922,15 +943,140 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
         buf.putInt(byteBuf.limit())
         buf.put(byteBuf)
     }
-} fun `greet`(`name`: kotlin.String): kotlin.String {
+}
+
+
+
+
+
+sealed class KithException(message: String): kotlin.Exception(message) {
+        
+        class InvalidPeerId(message: String) : KithException(message)
+        
+        class NetworkException(message: String) : KithException(message)
+        
+        class NotInitialized(message: String) : KithException(message)
+        
+        class AlreadyInitialized(message: String) : KithException(message)
+        
+
+    companion object ErrorHandler : UniffiRustCallStatusErrorHandler<KithException> {
+        override fun lift(error_buf: RustBuffer.ByValue): KithException = FfiConverterTypeKithError.lift(error_buf)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeKithError : FfiConverterRustBuffer<KithException> {
+    override fun read(buf: ByteBuffer): KithException {
+        
+            return when(buf.getInt()) {
+            1 -> KithException.InvalidPeerId(FfiConverterString.read(buf))
+            2 -> KithException.NetworkException(FfiConverterString.read(buf))
+            3 -> KithException.NotInitialized(FfiConverterString.read(buf))
+            4 -> KithException.AlreadyInitialized(FfiConverterString.read(buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+        
+    }
+
+    override fun allocationSize(value: KithException): ULong {
+        return 4UL
+    }
+
+    override fun write(value: KithException, buf: ByteBuffer) {
+        when(value) {
+            is KithException.InvalidPeerId -> {
+                buf.putInt(1)
+                Unit
+            }
+            is KithException.NetworkException -> {
+                buf.putInt(2)
+                Unit
+            }
+            is KithException.NotInitialized -> {
+                buf.putInt(3)
+                Unit
+            }
+            is KithException.AlreadyInitialized -> {
+                buf.putInt(4)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
+    override fun read(buf: ByteBuffer): kotlin.String? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterString.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.String?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterString.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.String?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterString.write(value, buf)
+        }
+    }
+}
+    @Throws(KithException::class) fun `init`(`peerIdHex`: kotlin.String)
+        = 
+    uniffiRustCallWithError(KithException) { _status ->
+    UniffiLib.uniffi_kith_core_fn_func_init(
+    
+        FfiConverterString.lower(`peerIdHex`),_status)
+}
+    
+    
+ fun `ourId`(): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_kith_core_fn_func_greet(
+    UniffiLib.uniffi_kith_core_fn_func_our_id(
     
-        FfiConverterString.lower(`name`),_status)
+        _status)
 }
     )
     }
+    
+ fun `popClipboard`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_kith_core_fn_func_pop_clipboard(
+    
+        _status)
+}
+    )
+    }
+    
+
+    @Throws(KithException::class) fun `pushClipboard`(`text`: kotlin.String)
+        = 
+    uniffiRustCallWithError(KithException) { _status ->
+    UniffiLib.uniffi_kith_core_fn_func_push_clipboard(
+    
+        FfiConverterString.lower(`text`),_status)
+}
+    
     
 
 
