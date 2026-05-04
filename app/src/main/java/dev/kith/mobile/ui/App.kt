@@ -25,17 +25,23 @@ fun App() {
             composable("home") {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text("kith")
                     Button(onClick = { nav.navigate("pair") }) {
                         Text("pair")
                     }
+                    Button(onClick = { nav.navigate("settings") }) {
+                        Text("settings")
+                    }
                 }
             }
             composable("pair") {
                 PairScreen(onPaired = { nav.popBackStack() })
+            }
+            composable("settings") {
+                SettingsScreen()
             }
         }
     }
